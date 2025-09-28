@@ -209,6 +209,7 @@ __marimo__/
 # 自定义忽略规则
 AI_Server/
 outputs/
+tools/
 *.mp3
 *.wav
 
