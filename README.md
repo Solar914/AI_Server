@@ -31,22 +31,50 @@
 ## 📁 项目结构
 
 ```
-Python_Backend/
+AI_Server/
 ├── ai_core/                    # AI 核心模块
 │   ├── llm/                   # 大语言模型模块
 │   │   └── chatglm.py        # ChatGLM 封装类
 │   └── tts/                   # 语音合成模块
 │       └── edge.py           # EdgeTTS 封装类
+├── docs/                      # 文档目录
+│   ├── API_KEY_CONFIG.md     # API密钥配置说明
+│   ├── API_KEY_SETUP_GUIDE.md # API密钥设置指南
+│   └── README.md             # 文档索引
 ├── outputs/                   # 输出文件目录
 │   └── tts/                  # TTS 生成的音频文件
+├── scripts/                   # 工具脚本目录
+│   ├── setup.py             # 环境设置脚本
+│   ├── start.py             # 项目启动脚本
+│   └── test_readme_examples.py # README示例测试脚本
+├── src/                       # 📦 源代码目录
+│   └── main.py              # 主程序入口
 ├── AI_Server/                # Python 虚拟环境
-├── main.py                   # 主程序和演示
+├── run.py                   # 🚀 快速启动器
+├── requirements.txt          # 依赖包列表
+├── .env.example              # API密钥配置示例
+├── .gitignore               # Git忽略规则
+├── LICENSE                  # 许可证文件
 └── README.md                # 项目文档
 ```
 
 ## 🚀 快速开始
 
-### 1. 环境准备
+### 方式一：使用设置脚本（推荐新手）
+
+```bash
+# 一键设置环境
+python scripts/setup.py
+
+# 启动项目（3种方式任选其一）
+python run.py              # 🚀 快速启动器
+python scripts/start.py    # 📜 脚本启动
+python src/main.py         # 🎯 直接启动
+```
+
+### 方式二：手动设置
+
+#### 1. 环境准备
 
 **创建并激活虚拟环境：**
 ```bash
@@ -104,7 +132,7 @@ pip install zai-sdk edge-tts python-dotenv
 
 ```powershell
 # 使用虚拟环境运行
-D:/AI_Work/01_Code/Python_Backend/AI_Server/Scripts/python.exe main.py
+python main.py
 ```
 
 ### 3. 预期输出
@@ -139,7 +167,7 @@ api_key = "你的API密钥"
 chatglm = ChatGLM.get_instance(api_key)
 
 # 方式2: 使用主程序的API key获取函数
-from main import get_api_key
+from src.main import get_api_key
 api_key = get_api_key()  # 会从.env文件或用户输入获取
 chatglm = ChatGLM.get_instance(api_key)
 
@@ -192,7 +220,7 @@ print(voices)
 ```python
 from ai_core.llm.chatglm import ChatGLM
 from ai_core.tts.edge import EdgeTTS
-from main import get_api_key  # 导入API key获取函数
+from src.main import get_api_key  # 导入API key获取函数
 
 # 获取API密钥
 api_key = get_api_key()  # 从.env文件或用户输入获取
