@@ -97,7 +97,7 @@ python -m venv AI_Server
 pip install -r requirements.txt
 
 # 方式2：手动安装
-pip install zai zai-sdk edge-tts
+pip install zai-sdk edge-tts python-dotenv
 ```
 
 ### 2. 运行演示
@@ -134,8 +134,14 @@ D:/AI_Work/01_Code/Python_Backend/AI_Server/Scripts/python.exe main.py
 ```python
 from ai_core.llm.chatglm import ChatGLM
 
-# 获取实例（单例模式）
-chatglm = ChatGLM.get_instance()
+# 方式1: 直接传入API key
+api_key = "你的API密钥"
+chatglm = ChatGLM.get_instance(api_key)
+
+# 方式2: 使用主程序的API key获取函数
+from main import get_api_key
+api_key = get_api_key()  # 会从.env文件或用户输入获取
+chatglm = ChatGLM.get_instance(api_key)
 
 # 基础对话
 response = chatglm.generate_response("你好，请介绍一下人工智能")
@@ -186,9 +192,13 @@ print(voices)
 ```python
 from ai_core.llm.chatglm import ChatGLM
 from ai_core.tts.edge import EdgeTTS
+from main import get_api_key  # 导入API key获取函数
+
+# 获取API密钥
+api_key = get_api_key()  # 从.env文件或用户输入获取
 
 # 初始化
-chatglm = ChatGLM.get_instance()
+chatglm = ChatGLM.get_instance(api_key)  # 传入API key
 tts = EdgeTTS.get_instance()
 
 # 对话生成
@@ -233,9 +243,9 @@ print(f"语音文件: {audio_file}")
 ### 核心依赖
 
 - **Python 3.11+**：编程语言
-- **zai**：智谱AI Python SDK
-- **zai-sdk**：智谱AI SDK扩展包
+- **zai-sdk**：智谱AI Python SDK
 - **edge-tts**：Microsoft Edge TTS 语音合成
+- **python-dotenv**：环境变量配置文件支持
 
 ### 可选依赖
 - **typing**：类型注解支持
