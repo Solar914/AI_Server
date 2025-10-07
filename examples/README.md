@@ -18,22 +18,6 @@ python examples/audio/audio_processing_sample.py
 
 ## 🤖 基础功能示例 (basic/)
 
-### `chatglm_basic_usage.py`
-ChatGLM 语言模型基础功能演示：
-- 基础对话功能
-- 参数调节演示
-- 系统提示词使用
-- 流式输出演示
-- 配置信息展示
-
-### `edgetts_basic_usage.py` 
-EdgeTTS 语音合成基础功能演示：
-- 基础文本转语音
-- 不同语音角色演示
-- 语速和音量调节
-- 批量文本处理
-- 语音文件管理
-
 ### `chatglm_tts_integration.py`
 ChatGLM + EdgeTTS 集成演示：
 - ChatGLM 基础功能测试
@@ -42,8 +26,6 @@ ChatGLM + EdgeTTS 集成演示：
 
 **运行方式：**
 ```bash
-python examples/basic/chatglm_basic_usage.py
-python examples/basic/edgetts_basic_usage.py  
 python examples/basic/chatglm_tts_integration.py
 ```
 
@@ -55,9 +37,7 @@ examples/
 ├── audio/                         # 音频处理相关示例
 │   └── audio_processing_sample.py # 完整音频处理流程
 └── basic/                         # 基础功能示例
-    ├── chatglm_basic_usage.py     # ChatGLM 基础使用
-    ├── chatglm_tts_integration.py # ChatGLM + TTS 集成
-    └── edgetts_basic_usage.py     # EdgeTTS 基础使用
+    └── chatglm_tts_integration.py # ChatGLM + TTS 集成
 ```
 
 ## 🚀 运行示例
