@@ -33,16 +33,22 @@
 ```
 AI_Server/
 ├── ai_core/                    # AI 核心模块
+│   ├── audio/                # 🎵 音频处理模块
+│   │   └── audio.py         # Opus编解码处理器
 │   ├── llm/                   # 大语言模型模块
 │   │   └── chatglm.py        # ChatGLM 封装类
 │   └── tts/                   # 语音合成模块
 │       └── edge.py           # EdgeTTS 封装类
-├── docs/                      # 文档目录
-│   ├── API_KEY_CONFIG.md     # API密钥配置说明
-│   ├── API_KEY_SETUP_GUIDE.md # API密钥设置指南
-│   └── README.md             # 文档索引
+├── examples/                  # 📚 示例代码目录
+│   ├── audio/                # 音频处理示例
+│   │   └── audio_processing_sample.py # 完整音频处理流程演示
+│   ├── basic/                # 基础功能示例
+│   │   └── chatglm_tts_integration.py # ChatGLM+TTS集成演示
+│   └── README.md             # 示例使用说明
 ├── outputs/                   # 输出文件目录
 │   └── tts/                  # TTS 生成的音频文件
+├── run.py                     # 🚀 项目主入口文件
+├── requirements.txt           # 依赖包配置
 ├── scripts/                   # 工具脚本目录
 │   ├── setup.py             # 环境设置脚本
 │   ├── start.py             # 项目启动脚本
@@ -60,23 +66,55 @@ AI_Server/
 
 ## 🚀 快速开始
 
-### 方式一：使用设置脚本（推荐新手）
+### 1. 环境准备
+
+**激活虚拟环境：**
 
 ```bash
-# 一键设置环境
-python scripts/setup.py
+# Windows PowerShell
+.\AI_Server\Scripts\Activate.ps1
 
-# 启动项目（3种方式任选其一）
-python run.py              # 🚀 快速启动器
-python scripts/start.py    # 📜 脚本启动
-python src/main.py         # 🎯 直接启动
+# 或使用 cmd
+AI_Server\Scripts\activate.bat
 ```
 
-### 方式二：手动设置
+**安装依赖：**
 
-#### 1. 环境准备
+```bash
+pip install -r requirements.txt
+```
 
-**创建并激活虚拟环境：**
+### 2. 配置API密钥
+
+创建 `.env` 文件并配置智谱AI密钥：
+
+```bash
+# 复制配置模板
+cp .env.example .env
+
+# 编辑配置文件，添加你的API密钥
+ZHIPU_API_KEY=your_api_key_here
+```
+
+### 3. 启动项目
+
+**运行主程序：**
+
+```bash
+# 交互式菜单模式（推荐）
+python run.py
+
+# 直接启动集成演示
+python run.py --demo
+
+# 基础功能测试
+python run.py --test
+```
+
+**功能说明：**
+- **集成演示**：ChatGLM + EdgeTTS 完整流程演示
+- **基础测试**：测试各组件是否正常工作
+- **交互模式**：可选择不同功能进行体验
 ```bash
 # Windows
 python -m venv AI_Server

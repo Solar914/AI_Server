@@ -1,3 +1,4 @@
 zai-sdk
 edge-tts
 python-dotenv
+pydub

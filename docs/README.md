@@ -23,10 +23,14 @@
 ## ❓ 常见问题
 
 ### 如何快速开始？
-运行 `python scripts/setup.py` 进行一键设置。
+1. 激活虚拟环境：`.\AI_Server\Scripts\Activate.ps1`
+2. 运行项目：`python run.py`
+
+### 如何检查环境？
+运行 `python scripts/setup.py` 检查环境状态。
 
 ### 如何启动项目？
-运行 `python scripts/start.py` 或 `python main.py`。
+运行 `python run.py` 启动主程序。
 
 ### API密钥在哪里设置？
 参考 [API密钥设置指南](API_KEY_SETUP_GUIDE.md)。
