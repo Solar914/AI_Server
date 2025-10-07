@@ -5,6 +5,8 @@ import sys
 import os
 import glob
 import traceback
+from datetime import datetime
+import json
 from dotenv import load_dotenv
 
 # 添加项目根目录到路径
@@ -20,6 +22,63 @@ from ai_core.tts.edge import EdgeTTS
 from ai_core.asr.funasr_wrapper import FunASR
 from ai_core.llm.chatglm import ChatGLM
 from ai_core.audio.audio import DownlinkProcessor, UplinkProcessor
+
+class TestSessionManager:
+    """测试会话管理器 - 负责保存测试输出和结果"""
+    
+    def __init__(self):
+        """初始化测试会话"""
+        self.session_time = datetime.now()
+        self.session_folder = self._create_session_folder()
+        self.test_results = {}
+        self.created_folders = set()  # 记录已创建的子文件夹
+        
+    def _create_session_folder(self):
+        """创建基于时间的测试会话文件夹（仅创建根文件夹）"""
+        timestamp = self.session_time.strftime("%Y%m%d_%H%M%S")
+        session_folder = f"outputs/test_sessions/{timestamp}"
+        os.makedirs(session_folder, exist_ok=True)
+        # 不再预先创建子文件夹，按需创建
+        return session_folder
+    
+    def log_test_result(self, test_name, result_data):
+        """记录测试结果"""
+        self.test_results[test_name] = {
+            'timestamp': datetime.now().isoformat(),
+            'result': result_data
+        }
+        
+    def get_session_path(self, subfolder=""):
+        """获取会话路径（按需创建子文件夹）"""
+        if subfolder:
+            path = f"{self.session_folder}/{subfolder}"
+            if subfolder not in self.created_folders:
+                os.makedirs(path, exist_ok=True)
+                self.created_folders.add(subfolder)
+                print(f"📁 创建测试输出文件夹: {path}")
+            return path
+        return self.session_folder
+    
+    def save_session_summary(self):
+        """保存测试会话总结"""
+        summary = {
+            'session_info': {
+                'start_time': self.session_time.isoformat(),
+                'end_time': datetime.now().isoformat(),
+                'session_folder': self.session_folder
+            },
+            'test_results': self.test_results
+        }
+        
+        summary_file = f"{self.session_folder}/test_summary.json"
+        with open(summary_file, 'w', encoding='utf-8') as f:
+            json.dump(summary, f, ensure_ascii=False, indent=2)
+        
+        print(f"\n📋 测试会话总结已保存: {summary_file}")
+        return summary_file
+
+# 全局测试会话管理器
+test_session = TestSessionManager()
 
 def get_performance_tips(inference_time, has_cuda):
     """生成性能优化建议"""
@@ -110,24 +169,61 @@ def main():
 def test_edge_tts():
     """EdgeTTS测试"""
     try:
+        print("🎤 EdgeTTS 测试")
+        print("=" * 40)
+        
         tts = EdgeTTS.get_instance()
         
-        # 创建输出目录
-        os.makedirs("outputs/tts", exist_ok=True)
+        # 使用会话文件夹
+        tts_folder = test_session.get_session_path("tts")
         
         text = input("🎤 请输入要合成的文字 (直接回车使用默认): ").strip()
         if not text:
             text = "你好，这是EdgeTTS语音合成测试"
         
-        result = tts.text_to_speech(text, "edge_test.mp3")
+        # 保存到会话文件夹
+        output_filename = f"edgetts_test_{datetime.now().strftime('%H%M%S')}.mp3"
+        
+        # EdgeTTS使用文件名而不是完整路径，需要临时改变工作目录
+        import tempfile
+        import shutil
+        
+        # 先在默认位置生成
+        result = tts.text_to_speech(text, output_filename)
+        
+        if result:
+            # 移动到会话文件夹
+            default_path = f"outputs/tts/{output_filename}"
+            session_path = os.path.join(tts_folder, output_filename)
+            if os.path.exists(default_path):
+                shutil.move(default_path, session_path)
+                result = session_path
+        
+        output_path = result if result else None
+        
+        test_result = {
+            'test_type': 'EdgeTTS',
+            'input_text': text,
+            'output_file': result,
+            'status': 'success' if result else 'failed'
+        }
         
         if result:
             print(f"✅ TTS成功: {result}")
+            print(f"📁 文件保存至: {result}")
         else:
             print("❌ TTS失败")
             
+        # 记录测试结果
+        test_session.log_test_result('EdgeTTS', test_result)
+            
     except Exception as e:
-        print(f"TTS失败: {e}")
+        print(f"❌ TTS失败: {e}")
+        test_session.log_test_result('EdgeTTS', {
+            'test_type': 'EdgeTTS',
+            'status': 'error',
+            'error': str(e)
+        })
 
 def test_funasr():
     """FunASR测试"""
@@ -153,8 +249,11 @@ def test_funasr():
         init_time = time.time() - start_time
         print(f"   初始化耗时: {init_time:.2f}秒")
         
-        # 查找测试音频文件
-        audio_files = glob.glob("outputs/tts/*.mp3")
+        # 查找测试音频文件（优先从当前会话，然后是通用输出）
+        session_audio_files = glob.glob(f"{test_session.session_folder}/tts/*.mp3")
+        general_audio_files = glob.glob("outputs/tts/*.mp3")
+        
+        audio_files = session_audio_files + general_audio_files
         
         if not audio_files:
             print("❌ 未找到测试音频文件，请先运行EdgeTTS演示")
@@ -175,6 +274,25 @@ def test_funasr():
         print(f"✅ 识别完成!")
         print(f"🎯 识别结果: {result}")
         print(f"⏱️  推理耗时: {inference_time:.2f}秒")
+        
+        # 保存ASR结果
+        asr_folder = test_session.get_session_path("asr")
+        
+        result_file = os.path.join(asr_folder, "recognition_result.txt")
+        with open(result_file, "w", encoding="utf-8") as f:
+            f.write(f"FunASR语音识别结果\n")
+            f.write(f"=" * 30 + "\n")
+            f.write(f"测试时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"音频文件: {audio_file}\n")
+            f.write(f"文件大小: {file_size:.1f} KB\n")
+            f.write(f"识别结果: {result}\n")
+            f.write(f"初始化耗时: {init_time:.2f}秒\n")
+            f.write(f"推理耗时: {inference_time:.2f}秒\n")
+            if result:
+                chars_per_sec = len(result) / inference_time if inference_time > 0 else 0
+                f.write(f"性能指标: {chars_per_sec:.1f} 字符/秒\n")
+        
+        print(f"📄 识别结果已保存到: {result_file}")
         
         # 计算性能指标
         if result:
@@ -228,6 +346,19 @@ def test_chatglm():
         response = chatglm.generate_response(user_input)
         print(f"🤖 回复: {response}")
         
+        # 保存ChatGLM对话结果
+        chatglm_folder = test_session.get_session_path("chatglm")
+        
+        chat_file = os.path.join(chatglm_folder, "conversation.txt")
+        with open(chat_file, "w", encoding="utf-8") as f:
+            f.write(f"ChatGLM对话记录\n")
+            f.write(f"=" * 30 + "\n")
+            f.write(f"测试时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"用户问题: {user_input}\n")
+            f.write(f"AI回复: {response}\n")
+        
+        print(f"📄 对话记录已保存到: {chat_file}")
+        
     except Exception as e:
         print(f"ChatGLM失败: {e}")
 
@@ -280,6 +411,36 @@ def test_audio_processing():
         print(f"   原始MP3: {original_size:,} bytes")
         print(f"   Opus编码: {opus_size:,} bytes (压缩 {(1-opus_size/original_size)*100:.1f}%)")
         print(f"   解码WAV: {decoded_size:,} bytes")
+        
+        # 保存音频处理结果
+        audio_folder = test_session.get_session_path("audio")
+        
+        # 保存处理报告
+        report_file = os.path.join(audio_folder, "processing_report.txt")
+        with open(report_file, "w", encoding="utf-8") as f:
+            f.write(f"音频处理测试报告\n")
+            f.write(f"=" * 30 + "\n")
+            f.write(f"测试时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"输入文件: {input_file}\n")
+            f.write(f"输出文件: {output_file}\n")
+            f.write(f"原始MP3大小: {original_size:,} bytes\n")
+            f.write(f"Opus编码大小: {opus_size:,} bytes\n")
+            f.write(f"压缩比例: {(1-opus_size/original_size)*100:.1f}%\n")
+            f.write(f"解码WAV大小: {decoded_size:,} bytes\n")
+        
+        # 保存Opus数据
+        opus_file = os.path.join(audio_folder, "encoded.opus")
+        with open(opus_file, "wb") as f:
+            f.write(opus_data)
+        
+        # 复制解码后的WAV文件到会话文件夹
+        if isinstance(output_file, str) and os.path.exists(output_file):
+            session_wav_file = os.path.join(audio_folder, "decoded.wav")
+            import shutil
+            shutil.copy2(output_file, session_wav_file)
+            
+        print(f"📄 处理报告已保存到: {report_file}")
+        print(f"📄 编码文件已保存到: {opus_file}")
         
     except Exception as e:
         print(f"Audio处理失败: {e}")
@@ -365,7 +526,39 @@ def test_comprehensive_demo():
         if tts_result:
             print(f"   ✅ 回答语音: {tts_result}")
         
+        # 保存综合演示结果
+        comp_folder = test_session.get_session_path("comprehensive")
+        
+        # 保存综合报告
+        demo_report_file = os.path.join(comp_folder, "demo_report.txt")
+        with open(demo_report_file, "w", encoding="utf-8") as f:
+            f.write(f"AI Server 综合演示报告\n")
+            f.write(f"=" * 40 + "\n")
+            f.write(f"测试时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"流程: 用户输入 -> TTS -> Audio处理 -> ASR -> LLM -> TTS\n\n")
+            f.write(f"1. 用户问题: {user_text}\n")
+            f.write(f"2. TTS生成语音: {audio_path}\n")
+            f.write(f"3. Opus编码大小: {len(opus_data):,} bytes\n")
+            f.write(f"4. 解码音频: {asr_audio_path}\n")
+            f.write(f"5. ASR识别结果: {recognized_text}\n")
+            f.write(f"6. ASR耗时: {asr_time:.2f}秒\n")
+            f.write(f"7. AI回答: {ai_response}\n")
+            f.write(f"8. 回答语音: {tts_result}\n")
+        
+        # 复制相关文件到会话文件夹
+        import shutil
+        try:
+            if os.path.exists(audio_path):
+                shutil.copy2(audio_path, os.path.join(comp_folder, "user_question.mp3"))
+            if os.path.exists(asr_audio_path):
+                shutil.copy2(asr_audio_path, os.path.join(comp_folder, "for_asr.wav"))
+            if tts_result and os.path.exists(tts_result):
+                shutil.copy2(tts_result, os.path.join(comp_folder, "ai_response.mp3"))
+        except Exception as copy_e:
+            print(f"⚠️ 文件复制警告: {copy_e}")
+        
         print("\n🎉 综合演示完成!")
+        print(f"📄 演示报告已保存到: {demo_report_file}")
         print("📂 所有输出文件保存在: outputs/comprehensive/")
         
     except Exception as e:
