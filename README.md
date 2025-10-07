@@ -1,67 +1,48 @@
-# AI Server - ChatGLM + EdgeTTS 集成项目
+﻿# AI Server - 智能语音处理服务
 
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![ChatGLM](https://img.shields.io/badge/Model-GLM--4.5-orange.svg)](https://zhipu-ai.cn/)
-[![EdgeTTS](https://img.shields.io/badge/TTS-Edge--TTS-red.svg)](https://github.com/rany2/edge-tts)
 
-一个集成了智谱 ChatGLM 大语言模型和 Microsoft Edge TTS 语音合成的 AI 服务器项目。支持文本对话生成和语音合成功能，提供完整的"对话 → 语音"流程。
+集成智谱 ChatGLM、FunASR 语音识别、EdgeTTS 语音合成和 Audio 音频处理的 AI 服务器。提供完整的语音对话处理链路。
 
 ## ✨ 功能特性
 
-### 🤖 ChatGLM 大语言模型
-- ✅ **智谱 GLM-4.5 模型**：支持自然语言对话
-- ✅ **单例模式设计**：全局唯一实例，节省资源
-- ✅ **灵活参数配置**：可选的 temperature、max_tokens 等参数
-- ✅ **对话历史支持**：维持上下文连续对话
-- ✅ **系统提示词管理**：可自定义 AI 行为和角色
-
-### 🎵 EdgeTTS 语音合成
-- ✅ **多语音角色**：支持 10+ 种中文语音（男声/女声）
-- ✅ **参数可调**：语速、音量可动态配置
-- ✅ **异步处理**：高效的语音生成
-- ✅ **文件管理**：自动创建输出目录和文件命名
-- ✅ **错误处理**：完整的异常处理机制
-
-### 🔗 集成特性
-- ✅ **无缝集成**：ChatGLM 输出直接转换为语音
-- ✅ **简单易用**：一键演示完整流程
-- ✅ **模块化设计**：独立的类库，便于扩展
+- 🤖 **ChatGLM**: 智谱 GLM-4.5 大语言模型，支持自然语言对话
+- 🎤 **FunASR**: 本地 Paraformer 语音识别，支持 CPU/CUDA/XPU
+- 🎵 **EdgeTTS**: 多语音角色的语音合成，支持参数调节
+- 🔊 **Audio**: Opus 音频编解码，支持多质量预设
+- 🚀 **会话管理**: 时间戳文件夹组织输出，完整的测试链路
 
 ## 📁 项目结构
 
-```
+```text
 AI_Server/
-├── ai_core/                    # AI 核心模块
+├── ai_core/                   # 🤖 AI 核心模块
+│   ├── asr/                  # 🎤 语音识别模块
+│   │   └── funasr_wrapper.py # FunASR 封装类
 │   ├── audio/                # 🎵 音频处理模块
-│   │   └── audio.py         # Opus编解码处理器
-│   ├── llm/                   # 大语言模型模块
-│   │   └── chatglm.py        # ChatGLM 封装类
-│   └── tts/                   # 语音合成模块
-│       └── edge.py           # EdgeTTS 封装类
-├── examples/                  # 📚 示例代码目录
-│   ├── audio/                # 音频处理示例
-│   │   └── audio_processing_sample.py # 完整音频处理流程演示
-│   ├── basic/                # 基础功能示例
-│   │   └── chatglm_tts_integration.py # ChatGLM+TTS集成演示
-│   └── README.md             # 示例使用说明
-├── outputs/                   # 输出文件目录
-│   └── tts/                  # TTS 生成的音频文件
+│   │   └── audio.py         # Opus 编解码处理器
+│   ├── llm/                  # 🧠 大语言模型模块
+│   │   └── chatglm.py       # ChatGLM 封装类
+│   └── tts/                  # 🔊 语音合成模块
+│       └── edge.py          # EdgeTTS 封装类
+├── outputs/                   # 📂 输出文件目录
+│   └── YYYYMMDD_HHMMSS/     # 按时间戳组织的会话文件夹
+│       ├── EdgeTTS/         # EdgeTTS 测试输出
+│       ├── FunASR/          # FunASR 测试输出
+│       ├── ChatGLM/         # ChatGLM 测试输出
+│       ├── Audio/           # Audio 处理测试输出
+│       └── Comprehensive/   # 综合演示输出
+├── scripts/                   # 🛠️ 工具脚本目录
+├── tools/                     # 🔧 工具集合目录
+├── docs/                      # 📚 文档目录
+├── AI_Server/                # 🐍 Python 虚拟环境
 ├── run.py                     # 🚀 项目主入口文件
-├── requirements.txt           # 依赖包配置
-├── scripts/                   # 工具脚本目录
-│   ├── setup.py             # 环境设置脚本
-│   ├── start.py             # 项目启动脚本
-│   └── test_readme_examples.py # README示例测试脚本
-├── src/                       # 📦 源代码目录
-│   └── main.py              # 主程序入口
-├── AI_Server/                # Python 虚拟环境
-├── run.py                   # 🚀 快速启动器
-├── requirements.txt          # 依赖包列表
-├── .env.example              # API密钥配置示例
-├── .gitignore               # Git忽略规则
-├── LICENSE                  # 许可证文件
-└── README.md                # 项目文档
+├── requirements.txt           # 📋 依赖包配置
+├── .env.example              # 🔑 API 密钥配置示例
+├── .gitignore               # 🚫 Git 忽略规则
+├── LICENSE                  # 📄 许可证文件
+└── README.md                # 📖 项目文档
 ```
 
 ## 🚀 快速开始
@@ -84,312 +65,67 @@ AI_Server\Scripts\activate.bat
 pip install -r requirements.txt
 ```
 
-### 2. 配置API密钥
-
-创建 `.env` 文件并配置智谱AI密钥：
+### 2. 配置与启动
 
 ```bash
-# 复制配置模板
+# 配置 API 密钥
 cp .env.example .env
+# 编辑 .env 文件: ZHIPU_API_KEY=your_api_key_here
 
-# 编辑配置文件，添加你的API密钥
-ZHIPU_API_KEY=your_api_key_here
-```
-
-### 3. 启动项目
-
-**运行主程序：**
-
-```bash
-# 交互式菜单模式（推荐）
+# 启动项目
 python run.py
-
-# 直接启动集成演示
-python run.py --demo
-
-# 基础功能测试
-python run.py --test
 ```
 
-**功能说明：**
-- **集成演示**：ChatGLM + EdgeTTS 完整流程演示
-- **基础测试**：测试各组件是否正常工作
-- **交互模式**：可选择不同功能进行体验
-```bash
-# Windows
-python -m venv AI_Server
-AI_Server\Scripts\activate
-
-# Linux/macOS  
-python -m venv AI_Server
-source AI_Server/bin/activate
-```
-
-**安装依赖：**
-```bash
-pip install -r requirements.txt
-```
-
-### 2. 配置 API 密钥
-
-本项目支持两种方式配置智谱AI的API密钥：
-
-#### 方法一：使用 .env 文件（推荐）
-1. 复制示例配置文件：
-```bash
-cp .env.example .env
-```
-
-2. 编辑 `.env` 文件，填入你的API密钥：
-```env
-ZHIPU_API_KEY=你的实际API密钥
-```
-
-#### 方法二：运行时输入
-如果没有设置.env文件，程序会在运行时提示你输入API密钥。
-
-### 3. 运行项目
-```powershell
-# 创建虚拟环境
-python -m venv AI_Server
-
-# 激活虚拟环境 (Windows)
-.\\AI_Server\\Scripts\\Activate.ps1
-```
-
-**安装依赖：**
-```powershell
-# 方式1：使用 requirements.txt（推荐）
-pip install -r requirements.txt
-
-# 方式2：手动安装
-pip install zai-sdk edge-tts python-dotenv
-```
-
-### 2. 运行演示
-
-```powershell
-# 使用虚拟环境运行
-python main.py
-```
+**功能菜单：** EdgeTTS演示 | FunASR演示 | ChatGLM演示 | Audio处理 | 综合演示
 
 ### 3. 预期输出
 
-```
-🚀 AI Server - ChatGLM + EdgeTTS 演示
-==================================================
+所有测试输出保存在 `outputs/时间戳/模块名/` 目录下，支持完整的语音对话链路演示。
 
-🎯 ChatGLM + EdgeTTS 简单演示
-----------------------------------------
-📝 正在初始化AI组件...
-✅ 初始化完成
-
-❓ 问题: 请简单介绍一下你自己，控制在50字以内
-🤖 正在生成AI回复...
-💬 AI回复: 我是一个AI助手，致力于提供有用信息和解答问题...
-
-🎵 正在生成语音文件...
-✅ 语音文件生成成功: outputs\\tts\\demo_output.mp3
-🎉 演示完成! 语音文件: outputs\\tts\\demo_output.mp3
-```
-
-## 📚 API 使用指南
-
-### ChatGLM 类使用
+## 📚 API 使用
 
 ```python
+# ChatGLM 对话
 from ai_core.llm.chatglm import ChatGLM
+chatglm = ChatGLM.get_instance("your_api_key")
+response = chatglm.generate_response("你好")
 
-# 方式1: 直接传入API key
-api_key = "你的API密钥"
-chatglm = ChatGLM.get_instance(api_key)
+# FunASR 语音识别  
+from ai_core.asr.funasr_wrapper import FunASR
+asr = FunASR.get_instance()
+result = asr.transcribe_file("audio.wav")
 
-# 方式2: 使用主程序的API key获取函数
-from src.main import get_api_key
-api_key = get_api_key()  # 会从.env文件或用户输入获取
-chatglm = ChatGLM.get_instance(api_key)
-
-# 基础对话
-response = chatglm.generate_response("你好，请介绍一下人工智能")
-
-# 高级参数配置
-response = chatglm.generate_response(
-    user_message="解释量子计算",
-    system_message="你是一个科学专家",
-    temperature=0.7,
-    conversation_history=[
-        {"role": "user", "content": "之前的问题"},
-        {"role": "assistant", "content": "之前的回答"}
-    ]
-)
-
-# 获取模型信息
-info = chatglm.get_model_info()
-print(info)
-```
-
-### EdgeTTS 类使用
-
-```python
+# EdgeTTS 语音合成
 from ai_core.tts.edge import EdgeTTS
-
-# 获取实例（单例模式）
 tts = EdgeTTS.get_instance()
+audio_path = tts.text_to_speech("你好")
 
-# 基础语音合成
-audio_path = tts.text_to_speech("你好，欢迎使用语音合成服务")
-
-# 高级参数配置
-audio_path = tts.text_to_speech(
-    text="这是一个测试语音",
-    filename="custom_output.mp3",
-    voice="zh-CN-YunjianNeural",  # 中文男声
-    rate="+20%",                  # 语速快20%
-    volume="+10%"                 # 音量大10%
-)
-
-# 获取可用语音列表
-voices = tts.get_available_voices()
-print(voices)
+# Audio 音频处理
+from ai_core.audio.audio import DownlinkProcessor, UplinkProcessor
+downlink = DownlinkProcessor("balanced")
+opus_data = downlink.process_audio("input.mp3", "bytes")
+uplink = UplinkProcessor("general")
+audio_path = uplink.decode_opus(opus_data, "file", "output.wav")
 ```
-
-### 集成使用示例
-
-```python
-from ai_core.llm.chatglm import ChatGLM
-from ai_core.tts.edge import EdgeTTS
-from src.main import get_api_key  # 导入API key获取函数
-
-# 获取API密钥
-api_key = get_api_key()  # 从.env文件或用户输入获取
-
-# 初始化
-chatglm = ChatGLM.get_instance(api_key)  # 传入API key
-tts = EdgeTTS.get_instance()
-
-# 对话生成
-user_question = "请简单解释什么是机器学习"
-ai_response = chatglm.generate_response(user_question)
-
-# 语音合成
-audio_file = tts.text_to_speech(ai_response)
-print(f"语音文件: {audio_file}")
-```
-
-## ⚙️ 配置说明
-
-### ChatGLM 配置
-
-| 参数 | 说明 | 默认值 |
-|-----|------|--------|
-| `api_key` | 智谱AI API密钥 | 用户提供 |
-| `model` | 模型名称 | `glm-4.5` |
-| `temperature` | 生成温度 (0-1) | 模型默认 |
-| `max_tokens` | 最大token数 | 无限制 |
-
-### EdgeTTS 配置
-
-| 参数 | 说明 | 默认值 |
-|-----|------|--------|
-| `voice` | 语音角色 | `zh-CN-XiaoyiNeural` |
-| `rate` | 语速调节 | `+0%` |
-| `volume` | 音量调节 | `+0%` |
-
-### 可用中文语音角色
-
-| 简化名称 | 完整名称 | 性别 | 特点 |
-|---------|---------|------|------|
-| `xiaoyi` | `zh-CN-XiaoyiNeural` | 女声 | 标准女声 |
-| `xiaoyou` | `zh-CN-XiaoyouNeural` | 男声 | 标准男声 |
-| `yunxi` | `zh-CN-YunxiNeural` | 男声 | 成熟男声 |
-| `yunxia` | `zh-CN-YunxiaNeural` | 女声 | 温和女声 |
 
 ## 📋 依赖项
 
-### 核心依赖
+Python 3.11+, zai-sdk, edge-tts, funasr, python-dotenv, pydub, torch
 
-- **Python 3.11+**：编程语言
-- **zai-sdk**：智谱AI Python SDK
-- **edge-tts**：Microsoft Edge TTS 语音合成
-- **python-dotenv**：环境变量配置文件支持
+## 🛠️ 开发说明
 
-### 可选依赖
-- **typing**：类型注解支持
-- **pathlib**：路径处理
-- **asyncio**：异步编程支持
-
-## 🛠️ 开发指南
-
-### 扩展 ChatGLM 功能
-
-```python
-# 添加新的便捷方法
-def quick_ask(self, question: str) -> str:
-    return self.generate_response(
-        user_message=question,
-        temperature=0.5,
-        system_message="请简洁回答"
-    )
-```
-
-### 扩展 EdgeTTS 功能
-
-```python
-# 添加批量语音生成
-def batch_text_to_speech(self, texts: List[str]) -> List[str]:
-    audio_paths = []
-    for i, text in enumerate(texts):
-        path = self.text_to_speech(text, filename=f"batch_{i}.mp3")
-        audio_paths.append(path)
-    return audio_paths
-```
-
-## 🚨 故障排除
-
-### 常见问题
-
-1. **ModuleNotFoundError: No module named 'zai'**
-   - 确保使用虚拟环境中的 Python 解释器
-   - 检查是否正确激活虚拟环境
-
-2. **API 调用失败**
-   - 检查网络连接
-   - 验证 API 密钥是否有效
-   - 确认 API 配额未超限
-
-3. **语音生成失败**
-   - 检查文本内容是否为空
-   - 确认输出目录权限
-   - 验证语音角色名称是否正确
-
-### 调试模式
-
-```python
-# 启用详细日志
-import logging
-logging.basicConfig(level=logging.DEBUG)
-```
+- 输出文件按时间戳组织：`outputs/YYYYMMDD_HHMMSS/模块名/`
+- 所有模块采用单例模式设计
+- 支持 CPU/CUDA/XPU 设备自动检测
 
 ## 📄 许可证
 
-本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
-
-## 🤝 贡献指南
-
-欢迎提交 Issue 和 Pull Request！
-
-1. Fork 项目
-2. 创建特性分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m 'Add amazing feature'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 创建 Pull Request
+MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
 
 ## 📞 联系方式
 
-如有问题或建议，请通过以下方式联系：
-
-- 📧 Email: 418754178@qq.com
-- 🐛 Issues: [GitHub Issues](https://github.com/yourusername/ai-server/issues)
+- 📧 Email: <418754178@qq.com>  
+- 🐛 Issues: [GitHub Issues](https://github.com/Solar914/AI_Server/issues)
 
 ---
 
