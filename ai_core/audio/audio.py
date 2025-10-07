@@ -574,7 +574,7 @@ class UplinkProcessor:
         else:
             return AudioSegment.from_file(io.BytesIO(audio_bytes), format=self.format)
     
-    def decode_opus(self, opus_data: bytes, output_format: str = "bytes") -> Union[bytes, str, AudioSegment]:
+    def decode_opus(self, opus_data: bytes, output_format: str = "bytes", output_path: Optional[str] = None) -> Union[bytes, str, AudioSegment]:
         """
         解码Opus数据为音频 - 主要接口方法
         
@@ -584,6 +584,7 @@ class UplinkProcessor:
                 - "bytes": 返回WAV音频字节数据(默认)
                 - "file": 保存WAV文件并返回文件路径
                 - "audiosegment": 返回AudioSegment对象供进一步处理
+            output_path (Optional[str]): 当output_format为"file"时的输出路径，None时自动生成
         
         Returns:
             Union[bytes, str, AudioSegment]: 根据output_format返回相应格式的数据
@@ -597,9 +598,13 @@ class UplinkProcessor:
         elif output_format == "audiosegment":
             return self.decode_to_audiosegment(opus_data)
         elif output_format == "file":
-            # 自动生成输出文件名
-            output_path = f"outputs/uplink_{self.preset}_decoded.{self.format}"
-            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            if output_path is None:
+                # 自动生成输出文件名
+                output_path = f"outputs/uplink_{self.preset}_decoded.{self.format}"
+                os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            else:
+                # 使用提供的路径，确保目录存在
+                os.makedirs(os.path.dirname(output_path), exist_ok=True)
             return self.decode_to_file(opus_data, output_path)
         else:
             raise ValueError(f"不支持的输出格式: {output_format}")

@@ -25,9 +25,8 @@ class EdgeTTS:
         self.rate = rate
         self.volume = volume
         
-        # 创建输出目录
+        # 设置默认输出目录（不预先创建）
         self.output_dir = Path("outputs/tts")
-        self.output_dir.mkdir(parents=True, exist_ok=True)
         
         # 常用中文语音列表
         self.chinese_voices = {
@@ -123,7 +122,15 @@ class EdgeTTS:
                 filename += '.mp3'
             
             # 完整的输出路径
-            output_path = self.output_dir / filename
+            # 如果filename包含路径分隔符，说明是完整路径
+            if '/' in filename or '\\' in filename:
+                output_path = Path(filename)
+                # 确保目录存在
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+            else:
+                # 确保默认输出目录存在
+                self.output_dir.mkdir(parents=True, exist_ok=True)
+                output_path = self.output_dir / filename
             
             # 使用临时参数或默认参数
             current_voice = voice if voice else self.voice

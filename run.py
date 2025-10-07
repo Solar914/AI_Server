@@ -29,17 +29,12 @@ class TestSessionManager:
     def __init__(self):
         """初始化测试会话"""
         self.session_time = datetime.now()
-        self.session_folder = self._create_session_folder()
+        self.timestamp = self.session_time.strftime("%Y%m%d_%H%M%S")
         self.test_results = {}
-        self.created_folders = set()  # 记录已创建的子文件夹
+        self.created_folders = set()  # 记录已创建的case文件夹
         
-    def _create_session_folder(self):
-        """创建基于时间的测试会话文件夹（仅创建根文件夹）"""
-        timestamp = self.session_time.strftime("%Y%m%d_%H%M%S")
-        session_folder = f"outputs/test_sessions/{timestamp}"
-        os.makedirs(session_folder, exist_ok=True)
-        # 不再预先创建子文件夹，按需创建
-        return session_folder
+        # 确保outputs目录存在
+        os.makedirs("outputs", exist_ok=True)
     
     def log_test_result(self, test_name, result_data):
         """记录测试结果"""
@@ -48,16 +43,14 @@ class TestSessionManager:
             'result': result_data
         }
         
-    def get_session_path(self, subfolder=""):
-        """获取会话路径（按需创建子文件夹）"""
-        if subfolder:
-            path = f"{self.session_folder}/{subfolder}"
-            if subfolder not in self.created_folders:
-                os.makedirs(path, exist_ok=True)
-                self.created_folders.add(subfolder)
-                print(f"📁 创建测试输出文件夹: {path}")
-            return path
-        return self.session_folder
+    def get_case_path(self, case_name):
+        """获取指定case的输出路径（按需创建文件夹）"""
+        path = f"outputs/{self.timestamp}/{case_name}"
+        if case_name not in self.created_folders:
+            os.makedirs(path, exist_ok=True)
+            self.created_folders.add(case_name)
+            print(f"📁 创建测试输出文件夹: {path}")
+        return path
     
     def save_session_summary(self):
         """保存测试会话总结"""
@@ -65,12 +58,14 @@ class TestSessionManager:
             'session_info': {
                 'start_time': self.session_time.isoformat(),
                 'end_time': datetime.now().isoformat(),
-                'session_folder': self.session_folder
+                'timestamp': self.timestamp,
+                'created_cases': list(self.created_folders)
             },
             'test_results': self.test_results
         }
         
-        summary_file = f"{self.session_folder}/test_summary.json"
+        summary_file = f"outputs/{self.timestamp}/test_summary.json"
+        os.makedirs(f"outputs/{self.timestamp}", exist_ok=True)
         with open(summary_file, 'w', encoding='utf-8') as f:
             json.dump(summary, f, ensure_ascii=False, indent=2)
         
@@ -174,8 +169,8 @@ def test_edge_tts():
         
         tts = EdgeTTS.get_instance()
         
-        # 使用会话文件夹
-        tts_folder = test_session.get_session_path("tts")
+        # 使用EdgeTTS case文件夹
+        tts_folder = test_session.get_case_path("EdgeTTS")
         
         text = input("🎤 请输入要合成的文字 (直接回车使用默认): ").strip()
         if not text:
@@ -183,23 +178,10 @@ def test_edge_tts():
         
         # 保存到会话文件夹
         output_filename = f"edgetts_test_{datetime.now().strftime('%H%M%S')}.mp3"
+        output_path = os.path.join(tts_folder, output_filename)
         
-        # EdgeTTS使用文件名而不是完整路径，需要临时改变工作目录
-        import tempfile
-        import shutil
-        
-        # 先在默认位置生成
-        result = tts.text_to_speech(text, output_filename)
-        
-        if result:
-            # 移动到会话文件夹
-            default_path = f"outputs/tts/{output_filename}"
-            session_path = os.path.join(tts_folder, output_filename)
-            if os.path.exists(default_path):
-                shutil.move(default_path, session_path)
-                result = session_path
-        
-        output_path = result if result else None
+        # EdgeTTS现在支持完整路径
+        result = tts.text_to_speech(text, output_path)
         
         test_result = {
             'test_type': 'EdgeTTS',
@@ -249,9 +231,9 @@ def test_funasr():
         init_time = time.time() - start_time
         print(f"   初始化耗时: {init_time:.2f}秒")
         
-        # 查找测试音频文件（优先从当前会话，然后是通用输出）
-        session_audio_files = glob.glob(f"{test_session.session_folder}/tts/*.mp3")
-        general_audio_files = glob.glob("outputs/tts/*.mp3")
+        # 查找测试音频文件（优先从当前会话的EdgeTTS，然后是所有时间戳文件夹）
+        session_audio_files = glob.glob(f"outputs/{test_session.timestamp}/EdgeTTS/*.mp3")
+        general_audio_files = glob.glob("outputs/*/EdgeTTS/*.mp3")
         
         audio_files = session_audio_files + general_audio_files
         
@@ -276,7 +258,7 @@ def test_funasr():
         print(f"⏱️  推理耗时: {inference_time:.2f}秒")
         
         # 保存ASR结果
-        asr_folder = test_session.get_session_path("asr")
+        asr_folder = test_session.get_case_path("FunASR")
         
         result_file = os.path.join(asr_folder, "recognition_result.txt")
         with open(result_file, "w", encoding="utf-8") as f:
@@ -347,7 +329,7 @@ def test_chatglm():
         print(f"🤖 回复: {response}")
         
         # 保存ChatGLM对话结果
-        chatglm_folder = test_session.get_session_path("chatglm")
+        chatglm_folder = test_session.get_case_path("ChatGLM")
         
         chat_file = os.path.join(chatglm_folder, "conversation.txt")
         with open(chat_file, "w", encoding="utf-8") as f:
@@ -369,11 +351,8 @@ def test_audio_processing():
         print("🎵 Audio 处理演示")
         print("=" * 40)
         
-        # 创建输出目录
-        os.makedirs("outputs/audio", exist_ok=True)
-        
-        # 查找音频文件
-        audio_files = glob.glob("outputs/tts/*.mp3")
+        # 查找音频文件（从所有时间戳文件夹的EdgeTTS子文件夹中查找）
+        audio_files = glob.glob("outputs/*/EdgeTTS/*.mp3")
         if not audio_files:
             print("❌ 未找到音频文件，请先运行EdgeTTS演示生成音频")
             return
@@ -387,12 +366,17 @@ def test_audio_processing():
         opus_data = downlink.process_audio(input_file, output_format="bytes")
         print(f"   Opus数据大小: {len(opus_data):,} bytes")
         
-        # 上行处理演示 (Opus -> WAV)
+        # 保存音频处理结果 - 先获取case文件夹
+        audio_folder = test_session.get_case_path("Audio")
+        
+        # 上行处理演示 (Opus -> WAV) - 直接保存到case文件夹
         print("\n📥 上行处理 (Opus数据 -> WAV格式)")
         uplink = UplinkProcessor(preset="general")
+        session_wav_file = os.path.join(audio_folder, "decoded.wav")
+        
         # 确保opus_data是bytes类型
         if isinstance(opus_data, bytes):
-            output_file = uplink.decode_opus(opus_data, output_format="file")
+            output_file = uplink.decode_opus(opus_data, output_format="file", output_path=session_wav_file)
         else:
             print("❌ Opus数据类型错误")
             return
@@ -412,9 +396,6 @@ def test_audio_processing():
         print(f"   Opus编码: {opus_size:,} bytes (压缩 {(1-opus_size/original_size)*100:.1f}%)")
         print(f"   解码WAV: {decoded_size:,} bytes")
         
-        # 保存音频处理结果
-        audio_folder = test_session.get_session_path("audio")
-        
         # 保存处理报告
         report_file = os.path.join(audio_folder, "processing_report.txt")
         with open(report_file, "w", encoding="utf-8") as f:
@@ -432,12 +413,6 @@ def test_audio_processing():
         opus_file = os.path.join(audio_folder, "encoded.opus")
         with open(opus_file, "wb") as f:
             f.write(opus_data)
-        
-        # 复制解码后的WAV文件到会话文件夹
-        if isinstance(output_file, str) and os.path.exists(output_file):
-            session_wav_file = os.path.join(audio_folder, "decoded.wav")
-            import shutil
-            shutil.copy2(output_file, session_wav_file)
             
         print(f"📄 处理报告已保存到: {report_file}")
         print(f"📄 编码文件已保存到: {opus_file}")
@@ -459,9 +434,6 @@ def test_comprehensive_demo():
             print("❌ 需要ZHIPU_API_KEY环境变量才能运行综合演示")
             return
         
-        # 创建输出目录
-        os.makedirs("outputs/comprehensive", exist_ok=True)
-        
         # 1. 用户输入
         user_text = input("💬 请输入一个问题 (直接回车使用默认): ").strip()
         if not user_text:
@@ -472,11 +444,14 @@ def test_comprehensive_demo():
         # 2. TTS - 将用户问题转为语音
         print("\n🎤 步骤1: 文字转语音 (TTS)")
         tts = EdgeTTS.get_instance()
-        tts_result = tts.text_to_speech(user_text, "user_question.mp3")
+        # 获取综合演示的输出文件夹
+        comp_folder = test_session.get_case_path("Comprehensive")
+        user_audio_path = os.path.join(comp_folder, "user_question.mp3")
+        tts_result = tts.text_to_speech(user_text, user_audio_path)
         if not tts_result:
             print("❌ TTS失败")
             return
-        audio_path = tts_result
+        audio_path = user_audio_path
         print(f"   ✅ 生成语音: {audio_path}")
         
         # 3. Audio处理 - 模拟IoT设备传输
@@ -489,7 +464,8 @@ def test_comprehensive_demo():
         
         # 上行: 解码为WAV供ASR使用
         uplink = UplinkProcessor(preset="general")
-        asr_audio_path = "outputs/comprehensive/for_asr.wav"
+        # 保存到Comprehensive文件夹中
+        asr_audio_path = os.path.join(comp_folder, "for_asr.wav")
         # 确保opus_data是bytes类型
         if isinstance(opus_data, bytes):
             uplink.decode_to_file(opus_data, asr_audio_path)
@@ -522,12 +498,10 @@ def test_comprehensive_demo():
         
         # 6. TTS - 将AI回答转为语音
         print("\n🔊 步骤5: 回答转语音 (TTS)")
-        tts_result = tts.text_to_speech(ai_response, "ai_response.mp3")
+        ai_audio_path = os.path.join(comp_folder, "ai_response.mp3") 
+        tts_result = tts.text_to_speech(ai_response, ai_audio_path)
         if tts_result:
             print(f"   ✅ 回答语音: {tts_result}")
-        
-        # 保存综合演示结果
-        comp_folder = test_session.get_session_path("comprehensive")
         
         # 保存综合报告
         demo_report_file = os.path.join(comp_folder, "demo_report.txt")
@@ -545,21 +519,11 @@ def test_comprehensive_demo():
             f.write(f"7. AI回答: {ai_response}\n")
             f.write(f"8. 回答语音: {tts_result}\n")
         
-        # 复制相关文件到会话文件夹
-        import shutil
-        try:
-            if os.path.exists(audio_path):
-                shutil.copy2(audio_path, os.path.join(comp_folder, "user_question.mp3"))
-            if os.path.exists(asr_audio_path):
-                shutil.copy2(asr_audio_path, os.path.join(comp_folder, "for_asr.wav"))
-            if tts_result and os.path.exists(tts_result):
-                shutil.copy2(tts_result, os.path.join(comp_folder, "ai_response.mp3"))
-        except Exception as copy_e:
-            print(f"⚠️ 文件复制警告: {copy_e}")
+        # 文件已直接生成到正确位置，无需复制
         
         print("\n🎉 综合演示完成!")
         print(f"📄 演示报告已保存到: {demo_report_file}")
-        print("📂 所有输出文件保存在: outputs/comprehensive/")
+        print(f"📂 所有输出文件保存在: {comp_folder}/")
         
     except Exception as e:
         print(f"综合演示失败: {e}")
