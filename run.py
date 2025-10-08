@@ -17,11 +17,7 @@ if project_root not in sys.path:
 # 加载.env文件
 load_dotenv()
 
-# 导入所有AI模块
-from ai_core.tts.edge import EdgeTTS
-from ai_core.asr.funasr_wrapper import FunASR
-from ai_core.llm.chatglm import ChatGLM
-from ai_core.audio.audio import DownlinkProcessor, UplinkProcessor
+# 注意：AI模块采用懒加载，只在需要时才导入以加快启动速度
 
 class TestSessionManager:
     """测试会话管理器 - 负责保存测试输出和结果"""
@@ -167,6 +163,8 @@ def test_edge_tts():
         print("🎤 EdgeTTS 测试")
         print("=" * 40)
         
+        # 懒加载EdgeTTS模块
+        from ai_core.tts.edge import EdgeTTS
         tts = EdgeTTS.get_instance()
         
         # 使用EdgeTTS case文件夹
@@ -218,11 +216,13 @@ def test_funasr():
         
         # 显示系统信息
         print(f"🖥️  设备信息:")
-        print(f"   CPU核心数: {os.cpu_count()}")
         print(f"   CUDA可用: {'✅' if torch.cuda.is_available() else '❌'}")
         if torch.cuda.is_available():
             print(f"   GPU设备: {torch.cuda.get_device_name()}")
             print(f"   GPU内存: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
+        
+        # 懒加载FunASR模块
+        from ai_core.asr.funasr_wrapper import FunASR
         
         # 初始化ASR（测量初始化时间）
         print(f"\n⏱️  模型加载中...")
@@ -241,71 +241,63 @@ def test_funasr():
             print("❌ 未找到测试音频文件，请先运行EdgeTTS演示")
             return
             
-        audio_file = audio_files[0]
-        # 获取音频文件信息
-        file_size = os.path.getsize(audio_file) / 1024
-        print(f"\n📁 音频文件: {os.path.basename(audio_file)}")
-        print(f"   文件大小: {file_size:.1f} KB")
+        # 使用第一个找到的音频文件
+        test_audio = audio_files[0]
+        print(f"🎵 测试音频: {test_audio}")
         
-        # 执行ASR识别（测量推理时间）
-        print(f"\n🔄 开始识别...")
+        # 语音识别测试（测量推理时间）
+        print(f"\n🎙️ 开始语音识别...")
         start_time = time.time()
-        result = asr.transcribe_file(audio_file)
+        result = asr.transcribe_file(test_audio)
         inference_time = time.time() - start_time
         
-        print(f"✅ 识别完成!")
         print(f"🎯 识别结果: {result}")
-        print(f"⏱️  推理耗时: {inference_time:.2f}秒")
+        print(f"⚡ 推理耗时: {inference_time:.2f}秒")
         
-        # 保存ASR结果
-        asr_folder = test_session.get_case_path("FunASR")
+        # 保存FunASR测试结果
+        funasr_folder = test_session.get_case_path("FunASR")
         
-        result_file = os.path.join(asr_folder, "recognition_result.txt")
-        with open(result_file, "w", encoding="utf-8") as f:
-            f.write(f"FunASR语音识别结果\n")
-            f.write(f"=" * 30 + "\n")
+        # 保存识别报告
+        report_file = os.path.join(funasr_folder, "recognition_report.txt")
+        with open(report_file, "w", encoding="utf-8") as f:
+            f.write(f"FunASR 语音识别测试报告\n")
+            f.write(f"=" * 40 + "\n")
             f.write(f"测试时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write(f"音频文件: {audio_file}\n")
-            f.write(f"文件大小: {file_size:.1f} KB\n")
+            f.write(f"设备信息: {'CUDA' if torch.cuda.is_available() else 'CPU'}\n")
+            f.write(f"音频文件: {test_audio}\n")
             f.write(f"识别结果: {result}\n")
             f.write(f"初始化耗时: {init_time:.2f}秒\n")
             f.write(f"推理耗时: {inference_time:.2f}秒\n")
-            if result:
-                chars_per_sec = len(result) / inference_time if inference_time > 0 else 0
-                f.write(f"性能指标: {chars_per_sec:.1f} 字符/秒\n")
         
-        print(f"📄 识别结果已保存到: {result_file}")
+        print(f"📄 识别报告已保存到: {report_file}")
         
-        # 计算性能指标
-        if result:
-            chars_per_sec = len(result) / inference_time if inference_time > 0 else 0
-            print(f"📊 性能指标: {chars_per_sec:.1f} 字符/秒")
+        # 生成性能建议
+        has_cuda = torch.cuda.is_available()
+        tips = get_performance_tips(inference_time, has_cuda)
         
-        # 详细的性能分析和建议
-        print(f"\n� 性能分析报告:")
-        print(f"   📝 总耗时: {init_time + inference_time:.2f}秒 (初始化: {init_time:.2f}s + 推理: {inference_time:.2f}s)")
-        
-        # 获取性能等级
-        if inference_time < 1.0:
-            level = "🎉 优秀"
-        elif inference_time < 2.0:
-            level = "✅ 良好"  
-        elif inference_time < 5.0:
-            level = "⚡ 一般"
-        else:
-            level = "🐌 较慢"
-            
-        print(f"   🏆 性能等级: {level}")
-        
-        # 显示优化建议
         print(f"\n💡 性能优化建议:")
-        tips = get_performance_tips(inference_time, torch.cuda.is_available())
         for tip in tips:
             print(f"   {tip}")
+            
+        # 记录测试结果
+        test_result = {
+            'test_type': 'FunASR',
+            'audio_file': test_audio,
+            'recognition_result': result,
+            'init_time': init_time,
+            'inference_time': inference_time,
+            'device': 'CUDA' if has_cuda else 'CPU',
+            'status': 'success' if result else 'failed'
+        }
+        test_session.log_test_result('FunASR', test_result)
         
     except Exception as e:
-        print(f"❌ ASR失败: {e}")
-        traceback.print_exc()
+        print(f"❌ FunASR失败: {e}")
+        test_session.log_test_result('FunASR', {
+            'test_type': 'FunASR', 
+            'status': 'error',
+            'error': str(e)
+        })
 
 def test_chatglm():
     """ChatGLM测试"""
@@ -317,6 +309,8 @@ def test_chatglm():
             print("💡 请设置API密钥: export ZHIPU_API_KEY=your_api_key")
             return
         
+        # 懒加载ChatGLM模块
+        from ai_core.llm.chatglm import ChatGLM
         chatglm = ChatGLM.get_instance(api_key)
         
         # 简单对话测试
@@ -350,6 +344,9 @@ def test_audio_processing():
         
         print("🎵 Audio 处理演示")
         print("=" * 40)
+        
+        # 懒加载Audio处理模块
+        from ai_core.audio.audio import DownlinkProcessor, UplinkProcessor
         
         # 查找音频文件（从所有时间戳文件夹的EdgeTTS子文件夹中查找）
         audio_files = glob.glob("outputs/*/EdgeTTS/*.mp3")
@@ -427,6 +424,12 @@ def test_comprehensive_demo():
         print("🌟 AI Server 综合演示")
         print("=" * 50)
         print("流程: 用户输入 -> TTS -> Audio处理 -> ASR -> LLM -> TTS")
+        
+        # 懒加载所有AI模块
+        from ai_core.tts.edge import EdgeTTS
+        from ai_core.asr.funasr_wrapper import FunASR
+        from ai_core.llm.chatglm import ChatGLM
+        from ai_core.audio.audio import DownlinkProcessor, UplinkProcessor
         
         # 检查API密钥
         api_key = os.getenv('ZHIPU_API_KEY')

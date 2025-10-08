@@ -2,6 +2,5 @@ zai-sdk
 edge-tts
 funasr
 torch
-soundfile
 python-dotenv
 pydub

@@ -72,7 +72,7 @@ class FunASR:
                     self.asr_model = AutoModel(model=str(self.model_path))
             else:
                 print("💻 使用CPU模式")
-                self.asr_model = AutoModel(model=str(self.model_path))
+                self.asr_model = AutoModel(model=str(self.model_path), disable_update=True)
                 
             return True
         except Exception as e:
