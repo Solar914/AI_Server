@@ -4,3 +4,4 @@ funasr
 torch
 python-dotenv
 pydub
+websockets
